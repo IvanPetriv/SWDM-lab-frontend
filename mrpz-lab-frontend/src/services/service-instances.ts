@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from "axios";
 import StudentApi from "./student-api";
+import AuthApi from "./auth-api";
 
 // Address of backend API endpoints
 const apiAddress = "https://localhost:7217/api/v1";
@@ -16,6 +17,7 @@ const axiosInstance: AxiosInstance = axios.create({
 });
 
 // Instances of service APIs
+export const authApiInstance = new AuthApi(axiosInstance);
 export const studentApiInstance = new StudentApi(axiosInstance);
 
 

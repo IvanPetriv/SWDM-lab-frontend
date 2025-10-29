@@ -1,5 +1,5 @@
 // DTOs for User-related API responses
-interface UserGetDto {
+export interface UserGetDto {
 	id: string;
 	username: string;
 	email: string;
