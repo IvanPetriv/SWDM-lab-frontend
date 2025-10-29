@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLogin } from '../hooks/auth';
 import { useAuth } from '../contexts/auth-context';
+import axios from 'axios';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +22,21 @@ export default function LoginPage() {
         },
       }
     );
+  };
+
+  const getErrorMessage = () => {
+    if (!error) return null;
+
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        return 'Invalid email or password. Please try again.';
+      }
+      if (error.response?.status && error.response.status >= 500) {
+        return 'Server error. Please try again later.';
+      }
+    }
+
+    return error.message || 'Login failed. Please try again.';
   };
 
   return (
@@ -61,8 +77,8 @@ export default function LoginPage() {
             />
           </div>
           {error && (
-            <div className='text-red-600 text-sm'>
-              {error.message || 'Login failed. Please try again.'}
+            <div className='text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-3'>
+              {getErrorMessage()}
             </div>
           )}
           <button

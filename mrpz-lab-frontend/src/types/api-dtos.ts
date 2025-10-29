@@ -35,3 +35,18 @@ export interface UserResponseDto {
   email: string;
   role: UserRole;
 }
+
+export interface UpdateUserDto {
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+// Course DTOs
+export interface CourseGetDto {
+  id: string;
+  name: string;
+  description: string;
+  code: number;
+}

@@ -10,6 +10,10 @@ export default function Header() {
     navigate('/profile');
   };
 
+  const handleDashboardClick = (): void => {
+    navigate('/dashboard');
+  };
+
   const handleLogout = (): void => {
     logout();
     navigate('/auth/login');
@@ -20,7 +24,12 @@ export default function Header() {
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex justify-between items-center h-16'>
           <div className='flex items-center'>
-            <h1 className='text-xl font-semibold text-gray-900'>Dashboard</h1>
+            <button
+              onClick={handleDashboardClick}
+              className='text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors'
+            >
+              Dashboard
+            </button>
           </div>
           <div className='flex items-center gap-4'>
             <button

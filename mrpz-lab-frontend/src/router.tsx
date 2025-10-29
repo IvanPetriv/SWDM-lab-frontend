@@ -1,7 +1,6 @@
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import DashboardRedirect from './components/DashboardRedirect';
-import HomePage from './pages/home-page';
 import LoginPage from './pages/login-page';
 import SignupPage from './pages/signup-page';
 import ProfilePage from './pages/profile-page';
@@ -45,14 +44,7 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path='/home'
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path='/home' element={<Navigate to='/dashboard' replace />} />
         <Route
           path='/profile'
           element={
