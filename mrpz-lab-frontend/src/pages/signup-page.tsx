@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSignup } from '../hooks/auth';
 
-export default function SignupPage(): React.JSX.Element {
+export default function SignupPage() {
   const [formData, setFormData] = useState({
     email: '',
     username: '',

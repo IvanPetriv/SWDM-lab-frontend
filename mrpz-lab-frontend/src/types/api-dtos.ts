@@ -1,9 +1,12 @@
+export type UserRole = 'Student' | 'Teacher' | 'Administrator';
+
 export interface UserGetDto {
   id: string;
   username: string;
   email: string;
   firstName: string;
   lastName: string;
+  role: UserRole;
 }
 
 export interface LoginDto {
@@ -17,7 +20,7 @@ export interface SignupDto {
   password: string;
   firstName?: string;
   lastName?: string;
-  role?: 'Student' | 'Teacher' | 'Administrator';
+  role?: UserRole;
 }
 
 export interface AuthResponseDto {
@@ -30,4 +33,5 @@ export interface UserResponseDto {
   firstName: string;
   lastName: string;
   email: string;
+  role: UserRole;
 }

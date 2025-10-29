@@ -5,6 +5,7 @@ import { queryClient } from './lib/react-query';
 import { AuthProvider } from './contexts/auth-context';
 import App from './App.tsx';
 import './index.css';
+import './mocks';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

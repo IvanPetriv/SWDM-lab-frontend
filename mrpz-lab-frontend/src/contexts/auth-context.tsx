@@ -6,10 +6,15 @@ import {
   type ReactNode,
 } from 'react';
 import { getAuthToken, removeAuthToken } from '../lib/axios';
+import { getUserProfile } from '../api/user';
+import type { UserGetDto, UserRole } from '../types/api-dtos';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: () => void;
+  user: UserGetDto | null;
+  userRole: UserRole | null;
+  isLoading: boolean;
+  login: () => Promise<void>;
   logout: () => void;
 }
 
@@ -27,27 +32,55 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export const AuthProvider = ({
-  children,
-}: AuthProviderProps): React.JSX.Element => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<UserGetDto | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const token = getAuthToken();
-    setIsAuthenticated(!!token);
+    if (token) {
+      setIsAuthenticated(true);
+      fetchUserProfile();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const login = (): void => {
+  const fetchUserProfile = async (): Promise<void> => {
+    try {
+      const userProfile = await getUserProfile();
+      setUser(userProfile);
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (): Promise<void> => {
     setIsAuthenticated(true);
+    await fetchUserProfile();
   };
 
   const logout = (): void => {
     removeAuthToken();
     setIsAuthenticated(false);
+    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        user,
+        userRole: user?.role || null,
+        isLoading,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

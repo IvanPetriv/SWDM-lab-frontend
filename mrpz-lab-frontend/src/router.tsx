@@ -1,18 +1,63 @@
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import DashboardRedirect from './components/DashboardRedirect';
 import HomePage from './pages/home-page';
 import LoginPage from './pages/login-page';
 import SignupPage from './pages/signup-page';
+import ProfilePage from './pages/profile-page';
+import StudentDashboard from './pages/student-dashboard';
+import TeacherDashboard from './pages/teacher-dashboard';
+import AdminDashboard from './pages/admin-dashboard';
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route
+          path='/dashboard'
+          element={
+            <ProtectedRoute>
+              <DashboardRedirect />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/dashboard/student'
+          element={
+            <ProtectedRoute>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/dashboard/teacher'
+          element={
+            <ProtectedRoute>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/dashboard/admin'
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path='/home'
           element={
             <ProtectedRoute>
               <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/profile'
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

@@ -3,21 +3,21 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useLogin } from '../hooks/auth';
 import { useAuth } from '../contexts/auth-context';
 
-export default function LoginPage(): React.JSX.Element {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { mutate: login, isPending, error } = useLogin();
-  const { login: setAuthenticated } = useAuth();
+  const { mutate: loginMutation, isPending, error } = useLogin();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    login(
+    loginMutation(
       { email, password },
       {
-        onSuccess: () => {
-          setAuthenticated();
-          navigate('/home');
+        onSuccess: async () => {
+          await login();
+          navigate('/dashboard');
         },
       }
     );
