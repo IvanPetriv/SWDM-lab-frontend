@@ -1,15 +1,33 @@
-// DTOs for User-related API responses
-interface UserGetDto {
-	id: string;
-	username: string;
-	email: string;
-	firstName: string;
-	lastName: string;
+export interface UserGetDto {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
 }
 
-// As the backend has these types inherited from User, they have the same fields
-export type StudentGetDto = UserGetDto
-export type StudentCreateDto = Omit<StudentGetDto, "id">
-export type TeacherGetDto = UserGetDto
-export type TeacherCreateDto = Omit<TeacherGetDto, "id">
-export type AdministratorGetDto = UserGetDto
+export interface LoginDto {
+  email: string;
+  password: string;
+}
+
+export interface SignupDto {
+  email: string;
+  username: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: 'Student' | 'Teacher' | 'Administrator';
+}
+
+export interface AuthResponseDto {
+  accessToken: string;
+}
+
+export interface UserResponseDto {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
