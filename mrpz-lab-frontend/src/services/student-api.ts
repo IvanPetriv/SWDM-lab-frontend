@@ -1,24 +1,19 @@
 import type { AxiosInstance } from "axios";
 import type { StudentCreateDto, StudentGetDto } from "../types/api-dtos";
+import BaseApi from "./base-api";
 
-export default class StudentApi {
-	private instance: AxiosInstance;
-	private endpoint: string;
-
+export default class StudentApi extends BaseApi {
 	constructor(instance: AxiosInstance, endpoint: string = "Student") {
-		this.instance = instance;
-		this.endpoint = endpoint;
+		super(instance, endpoint);
 	}
 
 	// Get a student by ID
 	async getStudentById(id: string): Promise<StudentGetDto> {
-		const response =  await this.instance.get<StudentGetDto>(`${this.endpoint}/${id}`);
-		return response.data;
+		return this.get(`${id}`);
 	}
 
 	// Create a new student
 	async createStudent(student: StudentCreateDto): Promise<StudentGetDto> {
-		const response = await this.instance.post<StudentGetDto>(`${this.endpoint}`, student);
-		return response.data;
+		return this.post(``, student);
 	}
 }
