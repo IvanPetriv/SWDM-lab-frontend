@@ -8,6 +8,7 @@ import {
 import {
   getAllCourses,
   getCourseWithFiles,
+  createCourse,
   updateCourse,
   deleteCourse,
   addStudentToCourse,
@@ -22,6 +23,7 @@ import type {
   CourseGetDto,
   CourseWithFilesDto,
   UserGetDto,
+  CreateCourseDto,
   UpdateCourseDto,
   StudentGetDto,
   AddStudentToCourseDto,
@@ -53,6 +55,23 @@ export const useUserById = (
     queryKey: ['users', userId],
     queryFn: () => getUserById(userId!),
     enabled: !!userId,
+  });
+};
+
+export const useCreateCourse = (): UseMutationResult<
+  CourseGetDto,
+  Error,
+  CreateCourseDto
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation<CourseGetDto, Error, CreateCourseDto>({
+    mutationFn: createCourse,
+    onSuccess: () => {
+      // Invalidate courses list to refetch after creation
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
+      queryClient.invalidateQueries({ queryKey: ['courses', 'my'] });
+    },
   });
 };
 

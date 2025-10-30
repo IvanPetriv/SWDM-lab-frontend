@@ -1,12 +1,44 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCourses } from '../../hooks/admin/use-courses';
-import { Loader2, BookOpen, ArrowLeft, Search } from 'lucide-react';
+import { useCourses, useCreateCourse } from '../../hooks/admin/use-courses';
+import { useUsers } from '../../hooks/admin/use-users';
+import { Loader2, BookOpen, ArrowLeft, Search, Plus } from 'lucide-react';
 
 export default function AdminCoursesPage() {
   const { data: courses, isLoading, error } = useCourses();
+  const { data: allUsers } = useUsers();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    code: 0,
+    teacherId: '',
+  });
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
+  const [createError, setCreateError] = useState('');
+
+  const createCourseMutation = useCreateCourse();
+
+  // Filter available teachers
+  const availableTeachers = useMemo(() => {
+    if (!allUsers) return [];
+    return allUsers.filter((user) => user.role === 'Teacher');
+  }, [allUsers]);
+
+  // Filter teachers by search query
+  const filteredTeachers = useMemo(() => {
+    if (!teacherSearchQuery.trim()) return availableTeachers;
+    const query = teacherSearchQuery.toLowerCase();
+    return availableTeachers.filter(
+      (teacher) =>
+        teacher.firstName.toLowerCase().includes(query) ||
+        teacher.lastName.toLowerCase().includes(query) ||
+        teacher.email.toLowerCase().includes(query) ||
+        teacher.username.toLowerCase().includes(query)
+    );
+  }, [availableTeachers, teacherSearchQuery]);
 
   // Filter courses based on search query
   const filteredCourses = useMemo(() => {
@@ -24,6 +56,38 @@ export default function AdminCoursesPage() {
 
     return courses;
   }, [courses, searchQuery]);
+
+  const handleCreateCourse = async () => {
+    if (!formData.name || !formData.description || !formData.code) {
+      setCreateError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setCreateError('');
+      // Generate a random GUID for the course ID
+      const courseId = crypto.randomUUID();
+      await createCourseMutation.mutateAsync({
+        id: courseId,
+        name: formData.name,
+        description: formData.description,
+        code: formData.code,
+        teacherId: formData.teacherId || undefined,
+      });
+      setShowCreateModal(false);
+      setFormData({ name: '', description: '', code: 0, teacherId: '' });
+      setTeacherSearchQuery('');
+    } catch (err) {
+      setCreateError('Failed to create course. Please try again.');
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+    setFormData({ name: '', description: '', code: 0, teacherId: '' });
+    setTeacherSearchQuery('');
+    setCreateError('');
+  };
 
   if (isLoading) {
     return (
@@ -72,6 +136,13 @@ export default function AdminCoursesPage() {
               className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
             />
           </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className='flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors'
+          >
+            <Plus className='w-5 h-5' />
+            Create Course
+          </button>
         </div>
 
         <p className='text-gray-600'>
@@ -117,6 +188,145 @@ export default function AdminCoursesPage() {
           ) : (
             <>No courses found.</>
           )}
+        </div>
+      )}
+
+      {/* Create Course Modal */}
+      {showCreateModal && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
+            <h3 className='text-xl font-bold text-gray-900 mb-4'>
+              Create New Course
+            </h3>
+
+            {createError && (
+              <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm'>
+                {createError}
+              </div>
+            )}
+
+            <div className='space-y-4 mb-6'>
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Course Name
+                </label>
+                <input
+                  type='text'
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                  placeholder='Enter course name'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Description
+                </label>
+                <input
+                  type='text'
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                  placeholder='Enter course description'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Course Code
+                </label>
+                <input
+                  type='number'
+                  value={formData.code || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      code: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                  placeholder='Enter course code'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Search Teachers (Optional)
+                </label>
+                <input
+                  type='text'
+                  value={teacherSearchQuery}
+                  onChange={(e) => setTeacherSearchQuery(e.target.value)}
+                  placeholder='Search by name, email, or username...'
+                  className='w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                />
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Assign Teacher (Optional)
+                </label>
+                <select
+                  value={formData.teacherId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, teacherId: e.target.value })
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                  size={Math.min(filteredTeachers.length + 1, 8)}
+                >
+                  <option value=''>-- No teacher assigned --</option>
+                  {filteredTeachers.map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.firstName} {teacher.lastName} ({teacher.email})
+                    </option>
+                  ))}
+                </select>
+                {availableTeachers.length === 0 && (
+                  <p className='text-sm text-gray-500 mt-2'>
+                    No teachers available.
+                  </p>
+                )}
+                {availableTeachers.length > 0 &&
+                  filteredTeachers.length === 0 && (
+                    <p className='text-sm text-gray-500 mt-2'>
+                      No teachers found matching your search.
+                    </p>
+                  )}
+                {filteredTeachers.length > 0 && (
+                  <p className='text-sm text-gray-500 mt-2'>
+                    Showing {filteredTeachers.length} of{' '}
+                    {availableTeachers.length} available teachers
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className='flex gap-3 justify-end'>
+              <button
+                onClick={handleCloseModal}
+                disabled={createCourseMutation.isPending}
+                className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateCourse}
+                disabled={createCourseMutation.isPending}
+                className='flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400'
+              >
+                {createCourseMutation.isPending ? (
+                  <>
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Course'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

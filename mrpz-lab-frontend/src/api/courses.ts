@@ -3,6 +3,7 @@ import type {
   CourseGetDto,
   CourseWithFilesDto,
   UpdateCourseDto,
+  CreateCourseDto,
   StudentGetDto,
   AddStudentToCourseDto,
   AddTeacherToCourseDto,
@@ -25,6 +26,13 @@ export const getCourseWithFiles = async (
   const response = await axiosInstance.get<CourseWithFilesDto>(
     `/course/${courseId}/files`
   );
+  return response.data;
+};
+
+export const createCourse = async (
+  data: CreateCourseDto
+): Promise<CourseGetDto> => {
+  const response = await axiosInstance.post<CourseGetDto>('/course', data);
   return response.data;
 };
 

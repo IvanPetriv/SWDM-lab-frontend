@@ -10,7 +10,8 @@ export default function SignupPage() {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: 'Student' as 'Student' | 'Teacher' | 'Administrator',
+    // role: 'Student' as 'Student' | 'Teacher' | 'Administrator',
+    role: 'Student' as 'Student' | 'Teacher',
   });
   const [passwordError, setPasswordError] = useState('');
   const { mutate: signup, isPending, error } = useSignup();
@@ -139,7 +140,7 @@ export default function SignupPage() {
             >
               <option value='Student'>Student</option>
               <option value='Teacher'>Teacher</option>
-              <option value='Administrator'>Administrator</option>
+              {/* <option value='Administrator'>Administrator</option> */}
             </select>
           </div>
           <div>

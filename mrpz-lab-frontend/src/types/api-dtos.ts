@@ -76,6 +76,14 @@ export interface UpdateCourseDto {
   code: number;
 }
 
+export interface CreateCourseDto {
+  id: string;
+  name: string;
+  description: string;
+  teacherId?: string;
+  code: number;
+}
+
 // Student DTOs
 export interface StudentGetDto {
   id: string;
