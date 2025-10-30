@@ -50,3 +50,47 @@ export interface CourseGetDto {
   description: string;
   code: number;
 }
+
+export interface CourseFileDto {
+  id: string;
+  courseId: string;
+  fileName: string;
+  filePath: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+}
+
+export interface CourseWithFilesDto {
+  id: string;
+  teacherId?: string;
+  name: string;
+  description: string;
+  code: number;
+  files: CourseFileDto[];
+}
+
+export interface UpdateCourseDto {
+  name: string;
+  description: string;
+  code: number;
+}
+
+// Student DTOs
+export interface StudentGetDto {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface AddStudentToCourseDto {
+  studentId: string;
+  courseId: string;
+}
+
+export interface AddTeacherToCourseDto {
+  teacherId: string;
+  courseId: string;
+}

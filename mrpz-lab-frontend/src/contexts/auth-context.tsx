@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { getAuthToken, removeAuthToken } from '../lib/axios';
 import { getUserProfile } from '../api/user';
+import { queryClient } from '../lib/react-query';
 import type { UserGetDto, UserRole } from '../types/api-dtos';
 
 interface AuthContextType {
@@ -66,6 +67,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = (): void => {
     removeAuthToken();
+    queryClient.clear();
     setIsAuthenticated(false);
     setUser(null);
   };

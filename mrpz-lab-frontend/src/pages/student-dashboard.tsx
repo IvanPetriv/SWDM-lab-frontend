@@ -1,10 +1,12 @@
 import { useAuth } from '../contexts/auth-context';
 import { useMyCourses } from '../hooks/courses/use-my-courses';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, Loader2 } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { data: courses, isLoading, error } = useMyCourses();
+  const navigate = useNavigate();
 
   return (
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
@@ -44,9 +46,10 @@ export default function StudentDashboard() {
         {courses && courses.length > 0 && (
           <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
             {courses.map((course) => (
-              <div
+              <button
                 key={course.id}
-                className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
+                onClick={() => navigate(`/student/courses/${course.id}`)}
+                className='border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-purple-300 transition-all text-left'
               >
                 <div className='flex items-start justify-between mb-2'>
                   <h4 className='font-semibold text-gray-900'>{course.name}</h4>
@@ -55,7 +58,7 @@ export default function StudentDashboard() {
                   </span>
                 </div>
                 <p className='text-gray-600 text-sm'>{course.description}</p>
-              </div>
+              </button>
             ))}
           </div>
         )}

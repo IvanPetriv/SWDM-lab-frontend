@@ -7,6 +7,12 @@ import ProfilePage from './pages/profile-page';
 import StudentDashboard from './pages/student-dashboard';
 import TeacherDashboard from './pages/teacher-dashboard';
 import AdminDashboard from './pages/admin-dashboard';
+import AdminUsersPage from './pages/admin/admin-users-page';
+import AdminUserDetailPage from './pages/admin/admin-user-detail-page';
+import AdminCoursesPage from './pages/admin/admin-courses-page';
+import AdminCourseDetailPage from './pages/admin/admin-course-detail-page';
+import TeacherCourseDetailPage from './pages/teacher/teacher-course-detail-page';
+import StudentCourseDetailPage from './pages/student/student-course-detail-page';
 
 export default function AppRouter() {
   return (
@@ -29,6 +35,14 @@ export default function AppRouter() {
           }
         />
         <Route
+          path='/student/courses/:id'
+          element={
+            <ProtectedRoute>
+              <StudentCourseDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path='/dashboard/teacher'
           element={
             <ProtectedRoute>
@@ -41,6 +55,46 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/teacher/courses/:id'
+          element={
+            <ProtectedRoute>
+              <TeacherCourseDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/admin/users'
+          element={
+            <ProtectedRoute>
+              <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/admin/users/:id'
+          element={
+            <ProtectedRoute>
+              <AdminUserDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/admin/courses'
+          element={
+            <ProtectedRoute>
+              <AdminCoursesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/admin/courses/:id'
+          element={
+            <ProtectedRoute>
+              <AdminCourseDetailPage />
             </ProtectedRoute>
           }
         />
