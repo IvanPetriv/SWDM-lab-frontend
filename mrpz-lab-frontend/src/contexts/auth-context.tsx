@@ -3,6 +3,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { getAuthToken, removeAuthToken } from '../lib/axios';
@@ -39,20 +40,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    const controller = new AbortController();
     const token = getAuthToken();
     if (token) {
       setIsAuthenticated(true);
-      fetchUserProfile();
+      void fetchUserProfile(controller.signal);
     } else {
       setIsLoading(false);
     }
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
-  const fetchUserProfile = async (): Promise<void> => {
+  const fetchUserProfile = async (signal?: AbortSignal): Promise<void> => {
     try {
-      const userProfile = await getUserProfile();
+      const userProfile = await getUserProfile({ signal });
       setUser(userProfile);
-    } catch (error) {
+    } catch (error: unknown) {
+      if (
+        (error as any)?.name === 'CanceledError' ||
+        (error as any)?.message === 'canceled'
+      ) {
+        return;
+      }
       console.error('Failed to fetch user profile:', error);
       logout();
     } finally {
@@ -72,18 +84,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        user,
-        userRole: user?.role || null,
-        isLoading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      isAuthenticated,
+      user,
+      userRole: user?.role || null,
+      isLoading,
+      login,
+      logout,
+    }),
+    [isAuthenticated, user, isLoading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

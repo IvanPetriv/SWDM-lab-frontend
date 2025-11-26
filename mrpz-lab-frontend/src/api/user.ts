@@ -4,11 +4,13 @@ import type {
   UpdateUserDto,
   CourseGetDto,
 } from '../types/api-dtos';
-import type { AxiosResponse } from 'axios';
+import type { AxiosResponse, AxiosRequestConfig } from 'axios';
 
-export const getUserProfile = async (): Promise<UserGetDto> => {
+export const getUserProfile = async (
+  config?: AxiosRequestConfig
+): Promise<UserGetDto> => {
   const response: AxiosResponse<UserGetDto> =
-    await axiosInstance.get<UserGetDto>('/user/me');
+    await axiosInstance.get<UserGetDto>('/user/me', config);
   return response.data;
 };
 

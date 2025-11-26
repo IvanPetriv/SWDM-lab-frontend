@@ -7,6 +7,7 @@ import {
 } from '../../hooks/admin/use-users';
 import { useAuth } from '../../contexts/auth-context';
 import { Loader2, ArrowLeft, Trash2, BookOpen } from 'lucide-react';
+import Modal from '../../components/Modal';
 
 export default function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -166,46 +167,44 @@ export default function AdminUserDetailPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-          <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
-            <h3 className='text-xl font-bold text-gray-900 mb-4'>
-              Confirm Delete
-            </h3>
-            <p className='text-gray-600 mb-6'>
-              Are you sure you want to delete{' '}
-              <strong>
-                {user.firstName} {user.lastName}
-              </strong>
-              ? This action cannot be undone.
-            </p>
-            <div className='flex gap-3 justify-end'>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-                className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50'
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className='flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50'
-              >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className='w-4 h-4 animate-spin' />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className='w-4 h-4' />
-                    Delete
-                  </>
-                )}
-              </button>
-            </div>
+        <Modal
+          title='Confirm Delete'
+          onClose={() => setShowDeleteConfirm(false)}
+        >
+          <p className='text-gray-600 mb-6'>
+            Are you sure you want to delete{' '}
+            <strong>
+              {user.firstName} {user.lastName}
+            </strong>
+            ? This action cannot be undone.
+          </p>
+          <div className='flex gap-3 justify-end'>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={isDeleting}
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50'
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className='flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50'
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className='w-4 h-4' />
+                  Delete
+                </>
+              )}
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

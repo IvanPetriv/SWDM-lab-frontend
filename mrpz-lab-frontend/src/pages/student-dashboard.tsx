@@ -1,12 +1,12 @@
 import { useAuth } from '../contexts/auth-context';
 import { useMyCourses } from '../hooks/courses/use-my-courses';
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import CourseCard from '../components/CourseCard';
+import InlineLoader from '../components/InlineLoader';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { data: courses, isLoading, error } = useMyCourses();
-  const navigate = useNavigate();
 
   return (
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
@@ -25,11 +25,7 @@ export default function StudentDashboard() {
           My Enrolled Courses
         </h3>
 
-        {isLoading && (
-          <div className='flex items-center justify-center py-8'>
-            <Loader2 className='w-8 h-8 animate-spin text-blue-600' />
-          </div>
-        )}
+        {isLoading && <InlineLoader />}
 
         {error && (
           <div className='text-red-600 py-4'>
@@ -46,19 +42,11 @@ export default function StudentDashboard() {
         {courses && courses.length > 0 && (
           <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
             {courses.map((course) => (
-              <button
+              <CourseCard
                 key={course.id}
-                onClick={() => navigate(`/student/courses/${course.id}`)}
-                className='border border-gray-200 rounded-lg p-4 hover:shadow-md hover:border-purple-300 transition-all text-left'
-              >
-                <div className='flex items-start justify-between mb-2'>
-                  <h4 className='font-semibold text-gray-900'>{course.name}</h4>
-                  <span className='text-sm font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded'>
-                    {course.code}
-                  </span>
-                </div>
-                <p className='text-gray-600 text-sm'>{course.description}</p>
-              </button>
+                course={course}
+                to={`/student/courses/${course.id}`}
+              />
             ))}
           </div>
         )}

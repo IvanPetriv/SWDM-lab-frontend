@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCourses, useCreateCourse } from '../../hooks/admin/use-courses';
 import { useUsers } from '../../hooks/admin/use-users';
 import { Loader2, BookOpen, ArrowLeft, Search, Plus } from 'lucide-react';
+import Modal from '../../components/Modal';
 
 export default function AdminCoursesPage() {
   const { data: courses, isLoading, error } = useCourses();
@@ -193,141 +194,135 @@ export default function AdminCoursesPage() {
 
       {/* Create Course Modal */}
       {showCreateModal && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-          <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
-            <h3 className='text-xl font-bold text-gray-900 mb-4'>
-              Create New Course
-            </h3>
+        <Modal title='Create New Course' onClose={handleCloseModal}>
+          {createError && (
+            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm'>
+              {createError}
+            </div>
+          )}
 
-            {createError && (
-              <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm'>
-                {createError}
-              </div>
-            )}
-
-            <div className='space-y-4 mb-6'>
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Course Name
-                </label>
-                <input
-                  type='text'
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
-                  placeholder='Enter course name'
-                />
-              </div>
-
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Description
-                </label>
-                <input
-                  type='text'
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
-                  placeholder='Enter course description'
-                />
-              </div>
-
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Course Code
-                </label>
-                <input
-                  type='number'
-                  value={formData.code || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      code: parseInt(e.target.value) || 0,
-                    })
-                  }
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
-                  placeholder='Enter course code'
-                />
-              </div>
-
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-2'>
-                  Search Teachers (Optional)
-                </label>
-                <input
-                  type='text'
-                  value={teacherSearchQuery}
-                  onChange={(e) => setTeacherSearchQuery(e.target.value)}
-                  placeholder='Search by name, email, or username...'
-                  className='w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
-                />
-                <label className='block text-sm font-medium text-gray-700 mb-2'>
-                  Assign Teacher (Optional)
-                </label>
-                <select
-                  value={formData.teacherId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, teacherId: e.target.value })
-                  }
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
-                  size={Math.min(filteredTeachers.length + 1, 8)}
-                >
-                  <option value=''>-- No teacher assigned --</option>
-                  {filteredTeachers.map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.firstName} {teacher.lastName} ({teacher.email})
-                    </option>
-                  ))}
-                </select>
-                {availableTeachers.length === 0 && (
-                  <p className='text-sm text-gray-500 mt-2'>
-                    No teachers available.
-                  </p>
-                )}
-                {availableTeachers.length > 0 &&
-                  filteredTeachers.length === 0 && (
-                    <p className='text-sm text-gray-500 mt-2'>
-                      No teachers found matching your search.
-                    </p>
-                  )}
-                {filteredTeachers.length > 0 && (
-                  <p className='text-sm text-gray-500 mt-2'>
-                    Showing {filteredTeachers.length} of{' '}
-                    {availableTeachers.length} available teachers
-                  </p>
-                )}
-              </div>
+          <div className='space-y-4 mb-6'>
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                Course Name
+              </label>
+              <input
+                type='text'
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                placeholder='Enter course name'
+              />
             </div>
 
-            <div className='flex gap-3 justify-end'>
-              <button
-                onClick={handleCloseModal}
-                disabled={createCourseMutation.isPending}
-                className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                Description
+              </label>
+              <input
+                type='text'
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                placeholder='Enter course description'
+              />
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                Course Code
+              </label>
+              <input
+                type='number'
+                value={formData.code || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    code: parseInt(e.target.value) || 0,
+                  })
+                }
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                placeholder='Enter course code'
+              />
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Search Teachers (Optional)
+              </label>
+              <input
+                type='text'
+                value={teacherSearchQuery}
+                onChange={(e) => setTeacherSearchQuery(e.target.value)}
+                placeholder='Search by name, email, or username...'
+                className='w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+              />
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                Assign Teacher (Optional)
+              </label>
+              <select
+                value={formData.teacherId}
+                onChange={(e) =>
+                  setFormData({ ...formData, teacherId: e.target.value })
+                }
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500'
+                size={Math.min(filteredTeachers.length + 1, 8)}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateCourse}
-                disabled={createCourseMutation.isPending}
-                className='flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400'
-              >
-                {createCourseMutation.isPending ? (
-                  <>
-                    <Loader2 className='w-4 h-4 animate-spin' />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Course'
+                <option value=''>-- No teacher assigned --</option>
+                {filteredTeachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.firstName} {teacher.lastName} ({teacher.email})
+                  </option>
+                ))}
+              </select>
+              {availableTeachers.length === 0 && (
+                <p className='text-sm text-gray-500 mt-2'>
+                  No teachers available.
+                </p>
+              )}
+              {availableTeachers.length > 0 &&
+                filteredTeachers.length === 0 && (
+                  <p className='text-sm text-gray-500 mt-2'>
+                    No teachers found matching your search.
+                  </p>
                 )}
-              </button>
+              {filteredTeachers.length > 0 && (
+                <p className='text-sm text-gray-500 mt-2'>
+                  Showing {filteredTeachers.length} of{' '}
+                  {availableTeachers.length} available teachers
+                </p>
+              )}
             </div>
           </div>
-        </div>
+
+          <div className='flex gap-3 justify-end'>
+            <button
+              onClick={handleCloseModal}
+              disabled={createCourseMutation.isPending}
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateCourse}
+              disabled={createCourseMutation.isPending}
+              className='flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400'
+            >
+              {createCourseMutation.isPending ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                  Creating...
+                </>
+              ) : (
+                'Create Course'
+              )}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

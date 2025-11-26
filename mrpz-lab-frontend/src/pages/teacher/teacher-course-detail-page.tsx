@@ -29,6 +29,8 @@ import {
   Save,
   X,
 } from 'lucide-react';
+import Modal from '../../components/Modal';
+import { saveBlob } from '../../lib/file-utils';
 
 export default function TeacherCourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -140,14 +142,7 @@ export default function TeacherCourseDetailPage() {
   const handleDownloadFile = async (fileId: string, fileName: string) => {
     try {
       const blob = await downloadFile(fileId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      saveBlob(blob, fileName);
     } catch (err) {
       alert('Failed to download file. Please try again.');
     }
@@ -517,183 +512,176 @@ export default function TeacherCourseDetailPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-          <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
-            <h3 className='text-xl font-bold text-gray-900 mb-4'>
-              Confirm Deletion
-            </h3>
-            <p className='text-gray-600 mb-6'>
-              Are you sure you want to delete the course "{course.name}"? This
-              action cannot be undone.
-            </p>
-            <div className='flex gap-3 justify-end'>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleteCourseMutation.isPending}
-                className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteCourseMutation.isPending}
-                className='px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400'
-              >
-                {deleteCourseMutation.isPending ? (
-                  <>
-                    <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete Course'
-                )}
-              </button>
-            </div>
+        <Modal
+          title='Confirm Deletion'
+          onClose={() => setShowDeleteConfirm(false)}
+        >
+          <p className='text-gray-600 mb-6'>
+            Are you sure you want to delete the course "{course?.name}"? This
+            action cannot be undone.
+          </p>
+          <div className='flex gap-3 justify-end'>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={deleteCourseMutation.isPending}
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteCourseMutation.isPending}
+              className='px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400'
+            >
+              {deleteCourseMutation.isPending ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Course'
+              )}
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Add Student Modal */}
       {showAddStudent && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-          <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
-            <h3 className='text-xl font-bold text-gray-900 mb-4'>
-              Add Student to Course
-            </h3>
-            <div className='mb-6'>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                Search Students
-              </label>
-              <input
-                type='text'
-                value={studentSearchQuery}
-                onChange={(e) => setStudentSearchQuery(e.target.value)}
-                placeholder='Search by name, email, or username...'
-                className='w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
-              />
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                Select Student
-              </label>
-              <select
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
-                size={Math.min(filteredStudents.length + 1, 8)}
-              >
-                <option value=''>-- Select a student --</option>
-                {filteredStudents.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.firstName} {student.lastName} ({student.email})
-                  </option>
-                ))}
-              </select>
-              {availableStudents.length === 0 && (
-                <p className='text-sm text-gray-500 mt-2'>
-                  All students are already enrolled in this course.
-                </p>
-              )}
-              {availableStudents.length > 0 &&
-                filteredStudents.length === 0 && (
-                  <p className='text-sm text-gray-500 mt-2'>
-                    No students found matching your search.
-                  </p>
-                )}
-              {filteredStudents.length > 0 && (
-                <p className='text-sm text-gray-500 mt-2'>
-                  Showing {filteredStudents.length} of{' '}
-                  {availableStudents.length} available students
-                </p>
-              )}
-            </div>
-            <div className='flex gap-3 justify-end'>
-              <button
-                onClick={() => {
-                  setShowAddStudent(false);
-                  setSelectedStudentId('');
-                  setStudentError('');
-                  setStudentSearchQuery('');
-                }}
-                disabled={addStudentMutation.isPending}
-                className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddStudent}
-                disabled={!selectedStudentId || addStudentMutation.isPending}
-                className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400'
-              >
-                {addStudentMutation.isPending ? (
-                  <>
-                    <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
-                    Adding...
-                  </>
-                ) : (
-                  'Add Student'
-                )}
-              </button>
-            </div>
+        <Modal
+          title='Add Student to Course'
+          onClose={() => setShowAddStudent(false)}
+        >
+          <div className='mb-6'>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Search Students
+            </label>
+            <input
+              type='text'
+              value={studentSearchQuery}
+              onChange={(e) => setStudentSearchQuery(e.target.value)}
+              placeholder='Search by name, email, or username...'
+              className='w-full px-3 py-2 mb-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+            />
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Select Student
+            </label>
+            <select
+              value={selectedStudentId}
+              onChange={(e) => setSelectedStudentId(e.target.value)}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+              size={Math.min(filteredStudents.length + 1, 8)}
+            >
+              <option value=''>-- Select a student --</option>
+              {filteredStudents.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.firstName} {student.lastName} ({student.email})
+                </option>
+              ))}
+            </select>
+            {availableStudents.length === 0 && (
+              <p className='text-sm text-gray-500 mt-2'>
+                All students are already enrolled in this course.
+              </p>
+            )}
+            {availableStudents.length > 0 && filteredStudents.length === 0 && (
+              <p className='text-sm text-gray-500 mt-2'>
+                No students found matching your search.
+              </p>
+            )}
+            {filteredStudents.length > 0 && (
+              <p className='text-sm text-gray-500 mt-2'>
+                Showing {filteredStudents.length} of {availableStudents.length}{' '}
+                available students
+              </p>
+            )}
           </div>
-        </div>
+          <div className='flex gap-3 justify-end'>
+            <button
+              onClick={() => {
+                setShowAddStudent(false);
+                setSelectedStudentId('');
+                setStudentError('');
+                setStudentSearchQuery('');
+              }}
+              disabled={addStudentMutation.isPending}
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddStudent}
+              disabled={!selectedStudentId || addStudentMutation.isPending}
+              className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400'
+            >
+              {addStudentMutation.isPending ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
+                  Adding...
+                </>
+              ) : (
+                'Add Student'
+              )}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* Upload File Modal */}
       {showUploadFile && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
-          <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
-            <h3 className='text-xl font-bold text-gray-900 mb-4'>
-              Upload Course File
-            </h3>
-            {uploadError && (
-              <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm'>
-                {uploadError}
-              </div>
+        <Modal
+          title='Upload Course File'
+          onClose={() => setShowUploadFile(false)}
+        >
+          {uploadError && (
+            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm'>
+              {uploadError}
+            </div>
+          )}
+          <div className='mb-6'>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Select File
+            </label>
+            <input
+              type='file'
+              onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+            />
+            {fileToUpload && (
+              <p className='text-sm text-gray-600 mt-2'>
+                Selected: {fileToUpload.name} (
+                {(fileToUpload.size / 1024).toFixed(2)} KB)
+              </p>
             )}
-            <div className='mb-6'>
-              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                Select File
-              </label>
-              <input
-                type='file'
-                onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
-                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
-              />
-              {fileToUpload && (
-                <p className='text-sm text-gray-600 mt-2'>
-                  Selected: {fileToUpload.name} (
-                  {(fileToUpload.size / 1024).toFixed(2)} KB)
-                </p>
-              )}
-            </div>
-            <div className='flex gap-3 justify-end'>
-              <button
-                onClick={() => {
-                  setShowUploadFile(false);
-                  setFileToUpload(null);
-                  setUploadError('');
-                }}
-                disabled={uploadFileMutation.isPending}
-                className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUploadFile}
-                disabled={!fileToUpload || uploadFileMutation.isPending}
-                className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400'
-              >
-                {uploadFileMutation.isPending ? (
-                  <>
-                    <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
-                    Uploading...
-                  </>
-                ) : (
-                  'Upload'
-                )}
-              </button>
-            </div>
           </div>
-        </div>
+          <div className='flex gap-3 justify-end'>
+            <button
+              onClick={() => {
+                setShowUploadFile(false);
+                setFileToUpload(null);
+                setUploadError('');
+              }}
+              disabled={uploadFileMutation.isPending}
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50'
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUploadFile}
+              disabled={!fileToUpload || uploadFileMutation.isPending}
+              className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400'
+            >
+              {uploadFileMutation.isPending ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
+                  Uploading...
+                </>
+              ) : (
+                'Upload'
+              )}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

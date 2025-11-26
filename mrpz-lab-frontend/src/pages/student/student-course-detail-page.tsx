@@ -15,6 +15,7 @@ import {
   Users,
   Download,
 } from 'lucide-react';
+import { saveBlob } from '../../lib/file-utils';
 
 export default function StudentCourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,14 +33,7 @@ export default function StudentCourseDetailPage() {
   const handleDownloadFile = async (fileId: string, fileName: string) => {
     try {
       const blob = await downloadFile(fileId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      saveBlob(blob, fileName);
     } catch (err) {
       alert('Failed to download file. Please try again.');
     }
