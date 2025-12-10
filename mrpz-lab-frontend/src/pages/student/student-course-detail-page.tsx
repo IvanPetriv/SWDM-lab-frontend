@@ -1,10 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   useCourseWithFiles,
   useUserById,
   useCourseStudents,
 } from '../../hooks/admin/use-courses';
 import { downloadFile } from '../../api/courses';
+import { usePostsByCourse } from '../../hooks/posts';
+import { useTestsByCourse, useMySubmissions } from '../../hooks/tests';
+import { getPostImage } from '../../api/posts';
 import {
   Loader2,
   ArrowLeft,
@@ -14,6 +18,10 @@ import {
   Calendar,
   Users,
   Download,
+  MessageSquare,
+  ClipboardList,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import { saveBlob } from '../../lib/file-utils';
 
@@ -29,12 +37,46 @@ export default function StudentCourseDetailPage() {
     course?.teacherId
   );
   const { data: students } = useCourseStudents(id || '');
+  const { data: posts } = usePostsByCourse(id || '');
+  const { data: tests } = useTestsByCourse(id || '');
+  const { data: mySubmissions } = useMySubmissions();
+  const [postImagePreviews, setPostImagePreviews] = useState<
+    Map<string, string>
+  >(new Map());
+
+  // Load post image thumbnails
+  useEffect(() => {
+    if (posts) {
+      const previews = new Map<string, string>();
+      Promise.all(
+        posts
+          .filter((post) => post.hasImage)
+          .map(async (post) => {
+            try {
+              const blob = await getPostImage(post.id);
+              const url = URL.createObjectURL(blob);
+              previews.set(post.id, url);
+            } catch {
+              // Ignore errors for individual images
+            }
+          })
+      ).then(() => {
+        setPostImagePreviews(previews);
+      });
+    }
+
+    return () => {
+      // Cleanup URLs
+      postImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts]);
 
   const handleDownloadFile = async (fileId: string, fileName: string) => {
     try {
       const blob = await downloadFile(fileId);
       saveBlob(blob, fileName);
-    } catch (err) {
+    } catch {
       alert('Failed to download file. Please try again.');
     }
   };
@@ -159,6 +201,132 @@ export default function StudentCourseDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Posts Section */}
+      <div className='bg-white rounded-lg shadow-md p-8 mb-6'>
+        <div className='flex items-center justify-between mb-6'>
+          <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
+            <MessageSquare className='w-6 h-6' />
+            Course Posts
+          </h2>
+          <span className='text-sm text-gray-500'>
+            {posts?.length || 0} post{posts?.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {!posts || posts.length === 0 ? (
+          <p className='text-gray-500 py-4'>No posts for this course yet.</p>
+        ) : (
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                onClick={() => navigate(`/student/posts/${post.id}`)}
+                className='border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer'
+              >
+                {post.hasImage && postImagePreviews.get(post.id) && (
+                  <div className='w-full h-32 bg-gray-100'>
+                    <img
+                      src={postImagePreviews.get(post.id)}
+                      alt='Post thumbnail'
+                      className='w-full h-full object-cover'
+                    />
+                  </div>
+                )}
+                <div className='p-4'>
+                  <h3 className='font-bold text-gray-900 mb-2 line-clamp-1'>
+                    {post.title}
+                  </h3>
+                  <p className='text-gray-600 line-clamp-3 mb-3 text-sm'>
+                    {post.textContent}
+                  </p>
+                  <div className='flex items-center gap-2 text-xs text-gray-500'>
+                    <Calendar className='w-3 h-3' />
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tests Section */}
+      <div className='bg-white rounded-lg shadow-md p-8 mb-6'>
+        <div className='flex items-center justify-between mb-6'>
+          <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
+            <ClipboardList className='w-6 h-6' />
+            Course Tests
+          </h2>
+          <span className='text-sm text-gray-500'>
+            {tests?.length || 0} test{tests?.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {!tests || tests.length === 0 ? (
+          <p className='text-gray-500 py-4'>No tests for this course yet.</p>
+        ) : (
+          <div className='space-y-3'>
+            {tests.map((test) => {
+              const submission = mySubmissions?.find(
+                (s) => s.testId === test.id
+              );
+              const isPastDue = new Date(test.dueDate) < new Date();
+
+              return (
+                <div
+                  key={test.id}
+                  onClick={() => navigate(`/student/tests/${test.id}`)}
+                  className='border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer'
+                >
+                  <div className='flex items-start justify-between'>
+                    <div className='flex-1'>
+                      <div className='flex items-center gap-2 mb-1'>
+                        <h3 className='font-bold text-gray-900'>
+                          {test.title}
+                        </h3>
+                        {submission && (
+                          <span className='flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded'>
+                            <CheckCircle className='w-3 h-3' />
+                            Submitted
+                          </span>
+                        )}
+                        {!submission && isPastDue && (
+                          <span className='flex items-center gap-1 text-xs bg-red-100 text-red-700 px-2 py-1 rounded'>
+                            <AlertCircle className='w-3 h-3' />
+                            Past Due
+                          </span>
+                        )}
+                      </div>
+                      <p className='text-gray-600 text-sm mb-2'>
+                        {test.description}
+                      </p>
+                      <div className='flex items-center gap-4 text-xs text-gray-500'>
+                        <div className='flex items-center gap-1'>
+                          <FileText className='w-3 h-3' />
+                          {test.questions.length} questions
+                        </div>
+                        <div className='flex items-center gap-1'>
+                          <Calendar className='w-3 h-3' />
+                          Due: {new Date(test.dueDate).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    {submission && (
+                      <div className='text-right ml-4'>
+                        <p className='text-2xl font-bold text-purple-600'>
+                          {submission.grade.toFixed(0)}%
+                        </p>
+                        <p className='text-xs text-gray-500'>Grade</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

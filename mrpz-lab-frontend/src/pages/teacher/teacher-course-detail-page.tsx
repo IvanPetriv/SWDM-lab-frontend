@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   useCourseWithFiles,
   useUserById,
@@ -13,6 +13,11 @@ import {
 } from '../../hooks/admin/use-courses';
 import { useUsers } from '../../hooks/admin/use-users';
 import { downloadFile } from '../../api/courses';
+import { usePostsByCourse, useCreatePost } from '../../hooks/posts';
+import { useTestsByCourse } from '../../hooks/tests';
+import { useGeneratePostImage } from '../../hooks/ai/use-ai';
+import { getPostImage } from '../../api/posts';
+import { streamPostContent } from '../../api/ai';
 import {
   Loader2,
   ArrowLeft,
@@ -28,8 +33,14 @@ import {
   Edit2,
   Save,
   X,
+  MessageSquare,
+  Plus,
+  Image as ImageIcon,
+  Sparkles,
+  ClipboardList,
 } from 'lucide-react';
 import Modal from '../../components/Modal';
+import AIGenerationModal from '../../components/AIGenerationModal';
 import { saveBlob } from '../../lib/file-utils';
 
 export default function TeacherCourseDetailPage() {
@@ -45,6 +56,8 @@ export default function TeacherCourseDetailPage() {
   );
   const { data: students } = useCourseStudents(id || '');
   const { data: allUsers } = useUsers();
+  const { data: posts } = usePostsByCourse(id || '');
+  const { data: tests } = useTestsByCourse(id || '');
 
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -62,6 +75,14 @@ export default function TeacherCourseDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [updateError, setUpdateError] = useState('');
   const [updateSuccess, setUpdateSuccess] = useState('');
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [postTitle, setPostTitle] = useState('');
+  const [postContent, setPostContent] = useState('');
+  const [postImage, setPostImage] = useState<File | null>(null);
+  const [postError, setPostError] = useState('');
+  const [postImagePreviews, setPostImagePreviews] = useState<
+    Map<string, string>
+  >(new Map());
 
   const addStudentMutation = useAddStudentToCourse();
   const removeStudentMutation = useRemoveStudentFromCourse();
@@ -69,6 +90,39 @@ export default function TeacherCourseDetailPage() {
   const deleteFileMutation = useDeleteFile(id || '');
   const updateCourseMutation = useUpdateCourse(id || '');
   const deleteCourseMutation = useDeleteCourse();
+  const createPostMutation = useCreatePost(id || '');
+  const generateImageMutation = useGeneratePostImage();
+
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+
+  // Load post image thumbnails
+  useEffect(() => {
+    if (posts) {
+      const previews = new Map<string, string>();
+      Promise.all(
+        posts
+          .filter((post) => post.hasImage)
+          .map(async (post) => {
+            try {
+              const blob = await getPostImage(post.id);
+              const url = URL.createObjectURL(blob);
+              previews.set(post.id, url);
+            } catch {
+              // Ignore errors for individual images
+            }
+          })
+      ).then(() => {
+        setPostImagePreviews(previews);
+      });
+    }
+
+    return () => {
+      // Cleanup URLs
+      postImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts]);
 
   // Filter available students (not already enrolled)
   const availableStudents = useMemo(() => {
@@ -103,7 +157,7 @@ export default function TeacherCourseDetailPage() {
       setShowAddStudent(false);
       setSelectedStudentId('');
       setStudentSearchQuery('');
-    } catch (err) {
+    } catch {
       setStudentError('Failed to add student. Please try again.');
     }
   };
@@ -113,7 +167,7 @@ export default function TeacherCourseDetailPage() {
     try {
       setStudentError('');
       await removeStudentMutation.mutateAsync({ studentId, courseId: id });
-    } catch (err) {
+    } catch {
       setStudentError('Failed to remove student. Please try again.');
     }
   };
@@ -125,7 +179,7 @@ export default function TeacherCourseDetailPage() {
       await uploadFileMutation.mutateAsync(fileToUpload);
       setShowUploadFile(false);
       setFileToUpload(null);
-    } catch (err) {
+    } catch {
       setUploadError('Failed to upload file. Please try again.');
     }
   };
@@ -134,7 +188,7 @@ export default function TeacherCourseDetailPage() {
     if (!window.confirm('Are you sure you want to delete this file?')) return;
     try {
       await deleteFileMutation.mutateAsync(fileId);
-    } catch (err) {
+    } catch {
       alert('Failed to delete file. Please try again.');
     }
   };
@@ -143,7 +197,7 @@ export default function TeacherCourseDetailPage() {
     try {
       const blob = await downloadFile(fileId);
       saveBlob(blob, fileName);
-    } catch (err) {
+    } catch {
       alert('Failed to download file. Please try again.');
     }
   };
@@ -175,7 +229,7 @@ export default function TeacherCourseDetailPage() {
       setIsEditing(false);
       setUpdateSuccess('Course updated successfully!');
       setTimeout(() => setUpdateSuccess(''), 3000);
-    } catch (err) {
+    } catch {
       setUpdateError('Failed to update course. Please try again.');
     }
   };
@@ -184,9 +238,78 @@ export default function TeacherCourseDetailPage() {
     try {
       await deleteCourseMutation.mutateAsync(id || '');
       navigate('/dashboard/teacher');
-    } catch (err) {
+    } catch {
       setUpdateError('Failed to delete course. Please try again.');
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleCreatePost = async () => {
+    if (!postTitle.trim()) {
+      setPostError('Post title cannot be empty');
+      return;
+    }
+    if (!postContent.trim()) {
+      setPostError('Post content cannot be empty');
+      return;
+    }
+
+    try {
+      setPostError('');
+      await createPostMutation.mutateAsync({
+        title: postTitle,
+        textContent: postContent,
+        image: postImage || undefined,
+      });
+      setShowCreatePost(false);
+      setPostTitle('');
+      setPostContent('');
+      setPostImage(null);
+    } catch {
+      setPostError('Failed to create post. Please try again.');
+    }
+  };
+
+  const handlePostImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPostImage(file);
+    }
+  };
+
+  const handleGenerateContent = async (prompt: string) => {
+    try {
+      setPostError('');
+      setShowAIModal(false);
+      setPostContent('');
+      setIsStreaming(true);
+
+      const stream = await streamPostContent(prompt);
+
+      for await (const chunk of stream) {
+        setPostContent((prev) => prev + chunk);
+      }
+    } catch {
+      setPostError('Failed to generate content. Please try again.');
+    } finally {
+      setIsStreaming(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!postTitle || !postContent) return;
+    try {
+      setPostError('');
+      const blob = await generateImageMutation.mutateAsync({
+        title: postTitle,
+        content: postContent,
+      });
+      const file = new File([blob], 'generated-image.png', {
+        type: 'image/png',
+      });
+      setPostImage(file);
+    } catch {
+      setPostError('Failed to generate image. Please try again.');
     }
   };
 
@@ -425,6 +548,115 @@ export default function TeacherCourseDetailPage() {
                 >
                   Remove
                 </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Posts Section */}
+      <div className='bg-white rounded-lg shadow-md p-8 mb-6'>
+        <div className='flex items-center justify-between mb-6'>
+          <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
+            <MessageSquare className='w-6 h-6' />
+            Course Posts
+          </h2>
+          <button
+            onClick={() => setShowCreatePost(true)}
+            className='flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700'
+          >
+            <Plus className='w-4 h-4' />
+            Create Post
+          </button>
+        </div>
+
+        {!posts || posts.length === 0 ? (
+          <p className='text-gray-500 py-4'>
+            No posts created for this course.
+          </p>
+        ) : (
+          <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                onClick={() => navigate(`/teacher/posts/${post.id}`)}
+                className='border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer'
+              >
+                {post.hasImage && postImagePreviews.get(post.id) && (
+                  <div className='w-full h-32 bg-gray-100'>
+                    <img
+                      src={postImagePreviews.get(post.id)}
+                      alt='Post thumbnail'
+                      className='w-full h-full object-cover'
+                    />
+                  </div>
+                )}
+                <div className='p-4'>
+                  <h3 className='font-bold text-gray-900 mb-2 line-clamp-1'>
+                    {post.title}
+                  </h3>
+                  <p className='text-gray-600 line-clamp-3 mb-3 text-sm'>
+                    {post.textContent}
+                  </p>
+                  <div className='flex items-center gap-2 text-xs text-gray-500'>
+                    <Calendar className='w-3 h-3' />
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Tests Section */}
+      <div className='bg-white rounded-lg shadow-md p-8 mb-6'>
+        <div className='flex items-center justify-between mb-6'>
+          <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
+            <ClipboardList className='w-6 h-6' />
+            Course Tests
+          </h2>
+          <button
+            onClick={() => navigate(`/teacher/courses/${id}/create-test`)}
+            className='flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700'
+          >
+            <Plus className='w-4 h-4' />
+            Create Test
+          </button>
+        </div>
+
+        {!tests || tests.length === 0 ? (
+          <p className='text-gray-500 py-4'>
+            No tests created for this course.
+          </p>
+        ) : (
+          <div className='space-y-3'>
+            {tests.map((test) => (
+              <div
+                key={test.id}
+                onClick={() => navigate(`/teacher/tests/${test.id}`)}
+                className='border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer'
+              >
+                <div className='flex items-start justify-between'>
+                  <div className='flex-1'>
+                    <h3 className='font-bold text-gray-900 mb-1'>
+                      {test.title}
+                    </h3>
+                    <p className='text-gray-600 text-sm mb-2'>
+                      {test.description}
+                    </p>
+                    <div className='flex items-center gap-4 text-xs text-gray-500'>
+                      <div className='flex items-center gap-1'>
+                        <FileText className='w-3 h-3' />
+                        {test.questions.length} questions
+                      </div>
+                      <div className='flex items-center gap-1'>
+                        <Calendar className='w-3 h-3' />
+                        Due: {new Date(test.dueDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -682,6 +914,169 @@ export default function TeacherCourseDetailPage() {
             </button>
           </div>
         </Modal>
+      )}
+
+      {/* Create Post Modal */}
+      {showCreatePost && (
+        <Modal title='Create New Post' onClose={() => setShowCreatePost(false)}>
+          {postError && (
+            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm'>
+              {postError}
+            </div>
+          )}
+          <div className='mb-4'>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Post Title
+            </label>
+            <input
+              type='text'
+              value={postTitle}
+              onChange={(e) => setPostTitle(e.target.value)}
+              maxLength={200}
+              disabled={isStreaming || generateImageMutation.isPending}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500'
+              placeholder='Enter post title...'
+            />
+          </div>
+          <div className='mb-6'>
+            <div className='flex justify-between items-center mb-2'>
+              <label className='block text-sm font-medium text-gray-700'>
+                Post Content
+              </label>
+              <button
+                onClick={() => setShowAIModal(true)}
+                disabled={isStreaming || generateImageMutation.isPending}
+                className='flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 disabled:text-gray-400 disabled:cursor-not-allowed'
+              >
+                {isStreaming ? (
+                  <>
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className='w-4 h-4' />
+                    Generate with AI
+                  </>
+                )}
+              </button>
+            </div>
+            <textarea
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              rows={8}
+              maxLength={10000}
+              disabled={isStreaming || generateImageMutation.isPending}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-100 disabled:text-gray-500'
+              placeholder='Write your post content here...'
+            />
+            <p className='text-sm text-gray-500 mt-1'>
+              {postContent.length} / 10000 characters
+            </p>
+          </div>
+          <div className='mb-6'>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Post Image (Optional)
+            </label>
+            <div className='flex items-center gap-3'>
+              <label
+                className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 ${
+                  isStreaming || generateImageMutation.isPending
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                }`}
+              >
+                <ImageIcon className='w-4 h-4' />
+                {postImage ? 'Change Image' : 'Add Image'}
+                <input
+                  type='file'
+                  accept='image/*'
+                  onChange={handlePostImageChange}
+                  className='hidden'
+                  disabled={isStreaming || generateImageMutation.isPending}
+                />
+              </label>
+              <button
+                onClick={handleGenerateImage}
+                disabled={
+                  !postTitle.trim() ||
+                  !postContent.trim() ||
+                  generateImageMutation.isPending ||
+                  isStreaming
+                }
+                className='flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-md hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed'
+                title={
+                  !postTitle.trim() || !postContent.trim()
+                    ? 'Fill in title and content to generate image'
+                    : 'Generate image based on post content'
+                }
+              >
+                {generateImageMutation.isPending ? (
+                  <>
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                    Generating Image...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className='w-4 h-4' />
+                    Generate Image
+                  </>
+                )}
+              </button>
+              {postImage && (
+                <span className='text-sm text-gray-600'>{postImage.name}</span>
+              )}
+            </div>
+          </div>
+          <div className='flex gap-3 justify-end'>
+            <button
+              onClick={() => {
+                setShowCreatePost(false);
+                setPostTitle('');
+                setPostContent('');
+                setPostImage(null);
+                setPostError('');
+              }}
+              disabled={
+                createPostMutation.isPending ||
+                isStreaming ||
+                generateImageMutation.isPending
+              }
+              className='px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed'
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreatePost}
+              disabled={
+                !postTitle.trim() ||
+                !postContent.trim() ||
+                createPostMutation.isPending ||
+                isStreaming ||
+                generateImageMutation.isPending
+              }
+              className='px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+            >
+              {createPostMutation.isPending ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin inline mr-2' />
+                  Creating...
+                </>
+              ) : (
+                'Create Post'
+              )}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* AI Generation Modal */}
+      {showAIModal && (
+        <AIGenerationModal
+          onClose={() => setShowAIModal(false)}
+          onGenerate={handleGenerateContent}
+          isGenerating={false}
+        />
       )}
     </div>
   );

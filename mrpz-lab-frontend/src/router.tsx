@@ -12,7 +12,12 @@ import AdminUserDetailPage from './pages/admin/admin-user-detail-page';
 import AdminCoursesPage from './pages/admin/admin-courses-page';
 import AdminCourseDetailPage from './pages/admin/admin-course-detail-page';
 import TeacherCourseDetailPage from './pages/teacher/teacher-course-detail-page';
+import TeacherCreateTestPage from './pages/teacher/teacher-create-test-page';
+import TeacherTestDetailPage from './pages/teacher/teacher-test-detail-page';
 import StudentCourseDetailPage from './pages/student/student-course-detail-page';
+import TeacherPostDetailPage from './pages/teacher/teacher-post-detail-page';
+import StudentPostDetailPage from './pages/student/student-post-detail-page';
+import StudentTestDetailPage from './pages/student/student-test-detail-page';
 
 export default function AppRouter() {
   return (
@@ -63,6 +68,46 @@ export default function AppRouter() {
           element={
             <ProtectedRoute>
               <TeacherCourseDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/teacher/courses/:courseId/create-test'
+          element={
+            <ProtectedRoute>
+              <TeacherCreateTestPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/teacher/tests/:id'
+          element={
+            <ProtectedRoute>
+              <TeacherTestDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/teacher/posts/:id'
+          element={
+            <ProtectedRoute>
+              <TeacherPostDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/student/posts/:id'
+          element={
+            <ProtectedRoute>
+              <StudentPostDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/student/tests/:id'
+          element={
+            <ProtectedRoute>
+              <StudentTestDetailPage />
             </ProtectedRoute>
           }
         />

@@ -102,3 +102,107 @@ export interface AddTeacherToCourseDto {
   teacherId: string;
   courseId: string;
 }
+
+// Post DTOs
+export interface PostGetDto {
+  id: string;
+  courseId: string;
+  authorId: string;
+  title: string;
+  textContent: string;
+  hasImage: boolean;
+  imageContentType?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreatePostDto {
+  courseId: string;
+  title: string;
+  textContent: string;
+  image?: File;
+}
+
+export interface UpdatePostDto {
+  title?: string;
+  textContent?: string;
+  image?: File;
+  removeImage?: boolean;
+}
+
+// Test DTOs
+export interface QuestionOptionDto {
+  id: string;
+  optionText: string;
+  isCorrect?: boolean;
+  orderIndex: number;
+}
+
+export interface QuestionDto {
+  id: string;
+  questionText: string;
+  orderIndex: number;
+  options: QuestionOptionDto[];
+}
+
+export interface TestGetDto {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  createdAt: string;
+  questions: QuestionDto[];
+}
+
+export interface CreateQuestionOptionDto {
+  optionText: string;
+  isCorrect: boolean;
+}
+
+export interface CreateQuestionDto {
+  questionText: string;
+  options: CreateQuestionOptionDto[];
+}
+
+export interface CreateTestDto {
+  courseId: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  questions: CreateQuestionDto[];
+}
+
+export interface SubmissionAnswerDto {
+  questionId: string;
+  questionText: string;
+  selectedOptionId: string;
+  selectedOptionText: string;
+  isCorrect: boolean;
+}
+
+export interface TestSubmissionDto {
+  id: string;
+  testId: string;
+  studentId: string;
+  studentName: string;
+  submittedAt: string;
+  grade: number;
+  answers: SubmissionAnswerDto[];
+}
+
+export interface SubmitTestAnswerDto {
+  questionId: string;
+  selectedOptionId: string;
+}
+
+export interface SubmitTestDto {
+  testId: string;
+  answers: SubmitTestAnswerDto[];
+}
+
+export interface StudentNotSubmittedDto {
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+}
